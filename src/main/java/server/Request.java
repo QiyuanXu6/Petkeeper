@@ -1,3 +1,5 @@
+package server;
+
 public class Request {
     public RequestType getType() {
         return type;

@@ -6,7 +6,7 @@ public class Server {
     private int serverID;
     private long zxid;
     private ZNodeTree tree;
-    private Constant.ServerState state;
+    //private Constant.ServerState state;
     private Database db;
     private Queue<Request> receivedRequests;
 

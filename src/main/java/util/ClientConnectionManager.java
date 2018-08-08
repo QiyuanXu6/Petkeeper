@@ -10,24 +10,21 @@ import java.nio.channels.SocketChannel;
  */
 public class ClientConnectionManager {
 
-    public byte[] clientSendRequest(byte[] data,  SocketAddress serverAddress){
-        ByteBuffer buffer = ByteBuffer.wrap(data);
+    public String clientSendRequest(String data,  SocketAddress serverAddress){
+        ByteBuffer buffer = ByteBuffer.wrap(data.getBytes());
         SocketChannel channel ;
+        StringBuilder strBuilder = new StringBuilder();
         try{
             channel = SocketChannel.open();
             channel.connect(serverAddress);
             channel.write(buffer);
             buffer.clear();
-            Thread.sleep(1000);
-            int numRead = channel.read(buffer);
-
-            if (numRead==-1){
-                return null;// TODO
-            }else{
-                byte[] response = new byte[numRead];
-                System.arraycopy(buffer.array(), 0, response,0,numRead);
-                return response;
+            while (channel.read(buffer) != -1){
+                strBuilder.append(new String(buffer.array()));
             }
+
+            return strBuilder.toString();
+
         }catch(Exception e){
             return null;// TODO
         }

@@ -56,8 +56,6 @@ public class ServerConnectionManager {
         }
     }
 
-
-
     public void serverReceive() {
         try{
             while (true){

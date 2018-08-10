@@ -1,8 +1,11 @@
 package server;
 
+import org.apache.commons.lang3.SerializationUtils;
+
+import java.io.Serializable;
 import java.nio.channels.SelectionKey;
 
-public class Request {
+public class Request implements Serializable {
     private SelectionKey key;
     private byte[] value;
 
@@ -33,4 +36,14 @@ public class Request {
         ClientToServer, ResponseToClient, PeerProposal,PeerResponse;
     }
     private RequestType type;
+
+    public byte[] Serialize(){
+        return SerializationUtils.serialize(this);
+    }
+
+    public Request Deserialize(byte[] data){
+        return SerializationUtils.deserialize(data);
+    }
+
+
 }

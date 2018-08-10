@@ -64,19 +64,6 @@ public class PetServer {
     }
 
 
-//    public void running(){
-//        while (true){
-//            while (receivedRequests.isEmpty());//TODO: blocking;
-//            Request request= receivedRequests.poll();
-//            switch (request.getType()){
-//                case PeerProposal: ...// TODO
-//            }
-//
-//
-//        }
-//    }
-//    //TODO:How to express a running server?
-
 
 
 

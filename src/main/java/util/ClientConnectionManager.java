@@ -18,7 +18,7 @@ public class ClientConnectionManager {
             channel = SocketChannel.open();
             channel.connect(serverAddress);
             channel.write(buffer);
-            buffer.clear();
+            buffer.clear();buffer
             while (channel.read(buffer) != -1){
                 strBuilder.append(new String(buffer.array()));
             }

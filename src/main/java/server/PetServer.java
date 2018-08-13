@@ -3,15 +3,35 @@ package server;
 import util.ServerConnectionManager;
 
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.util.Queue;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class PetServer {
-    private int serverID;
+    private long serverID;
+    private InetSocketAddress address;
     private long zxid;
     private ZNodeTree tree;
     //private Constant.ServerState state;
     private Database db;
+    private ServerState state;
+    private ServerSocket socket;
+
+    public ServerSocket getSocket(){
+        return socket;
+    }
+
+
+    public enum ServerState{
+        on, off
+    }
+
+    public Boolean isShutDown(){
+        return state == ServerState.off;
+    }
+
+
+
 
     private Queue<Request> sendingQueue;
     private Queue<Request> receivedQueue;

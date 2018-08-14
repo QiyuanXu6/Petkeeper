@@ -1,11 +1,12 @@
 package server;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -14,14 +15,29 @@ public class QuorumConnectionManager {
     public static int queueLength = 1000;
 
 
-    PetServer localServer;
-    Map<Long,ServerView> view;
+    private PetServer localServer;
+    private Map<Long,ServerView> view;
 
-    ArrayBlockingQueue<ByteBuffer> receivedQueue;
+    private ArrayBlockingQueue<ReceivedDataAndID> receivedQueue;
 
+    private class ReceivedDataAndID {
+        byte[] data;
+        long id;
+        ReceivedDataAndID(byte[] data, long id) {
+            this.data = data;
+            this.id = id;
+        }
+    }
 
-    public QuorumConnectionManager(){
+    private ReentrantLock receivedQueueLock;
 
+    public Map<Long,ServerView> getView(){
+        return view;
+    }
+    public QuorumConnectionManager(PetServer localServer){
+        this.localServer = localServer;
+        receivedQueue = new ArrayBlockingQueue<ReceivedDataAndID>(queueLength);
+        view = new HashMap<Long, ServerView>();
     }
 
     public boolean startConnectionRequest(Long peerID){
@@ -35,12 +51,13 @@ public class QuorumConnectionManager {
                 }
 
                 peer.isConnected = true;
-                peer.sendThread = new SendThread(peer.socket);
-                return true;
+                peer.sendThread = new SendThread(peerID);
+
 
             }
 
         }
+        return true;
 
     }
 
@@ -60,13 +77,13 @@ public class QuorumConnectionManager {
                 }
             }
             //
-            if (id.equals(0))
-                throw new Exception("Not found socket");
+//            if (id.equals(0))
+//                throw new Exception("Not found socket"); Todo: be to added
             ServerView peer = view.get(id);
             peer.isConnected = true;
             peer.socket = client;
 
-            peer.receiveThread = new ReceiveThread();
+            peer.receiveThread = new ReceiveThread(id);
             peer.receiveThread.start();
 
         }
@@ -74,17 +91,15 @@ public class QuorumConnectionManager {
     }
 
 
-
-    public void sendMessage(long peerID, ByteBuffer data){
+    public void sendMessage(long peerID, byte[] data){
         view.get(peerID).toSendQueue.add(data);
     }
-
 
 
     /**
      * Other peers' views
      */
-    private class ServerView{
+    public static class ServerView{
         long serverID;
         InetSocketAddress address;
         Socket socket;
@@ -94,15 +109,17 @@ public class QuorumConnectionManager {
         SendThread sendThread;
         ReceiveThread receiveThread;
 
-        ArrayBlockingQueue<ByteBuffer> toSendQueue;// every other peer has one
+        ArrayBlockingQueue<byte[]> toSendQueue;// every other peer has one
 
-        ServerView(){
+        public ServerView(long serverID, InetSocketAddress address){
+            this.serverID = serverID;
+            this.address = address;
+            isConnected = false;
+            lock = new ReentrantLock();
+            toSendQueue = new ArrayBlockingQueue<byte[]>(queueLength);
+
 
         }
-
-
-
-
 
 
 
@@ -125,7 +142,7 @@ public class QuorumConnectionManager {
 
         @Override
         public void run() {
-            ArrayBlockingQueue<ByteBuffer> queue = view.get(peerID).toSendQueue;
+            ArrayBlockingQueue<byte[]> queue = view.get(peerID).toSendQueue;
             // TODO: like Zookeeper. Keep sending last message when queue is empty
             Socket socket = view.get(peerID).socket;
             DataOutputStream dout = null;
@@ -133,9 +150,9 @@ public class QuorumConnectionManager {
                 dout = new DataOutputStream(socket.getOutputStream());
 
                 if (!queue.isEmpty()) {
-                    ByteBuffer data = queue.poll();
-                    dout.writeInt(data.capacity());
-                    dout.
+                    byte[] data = queue.poll();
+                    dout.writeInt(data.length);
+                    dout.write(data);
 
                 }
 
@@ -147,17 +164,36 @@ public class QuorumConnectionManager {
     }
 
 
-    }
 
     private class ReceiveThread extends Thread{
+        long peerID;
+
+        ReceiveThread(long peerID){
+            this.peerID = peerID;
+        }
+
+        @Override
+        public void run() {
+
+            Socket socket = view.get(peerID).socket;
+            DataInputStream din = null;
+            try {
+                din = new DataInputStream(socket.getInputStream());
+                byte len = din.readByte();
+
+                byte[] data = new byte[len];
+                din.readFully(data);
+
+                synchronized (receivedQueueLock) {
+                    receivedQueue.add(new ReceivedDataAndID(data,peerID));
+                }
+
+
+
+            }catch(IOException e) {
+            }
+        }
 
     }
-
-
-
-
-
-
-
-
 }
+

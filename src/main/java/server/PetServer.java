@@ -17,6 +17,13 @@ public class PetServer {
     private ServerState state;
     private ServerSocket socket;
 
+
+    public PetServer(long severID){
+        long
+
+    }
+
+
     public ServerSocket getSocket(){
         return socket;
     }
@@ -54,13 +61,7 @@ public class PetServer {
         return receivedQueue;
     }
 
-    /*
-    Initialize
-     */
-    public PetServer(){
-        //ServerConnectionManager a = new ServerConnectionManager(null,this);
 
-    }
 
 
     public void serverStart(){
